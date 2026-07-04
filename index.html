@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RF·CAL — EIRP Field Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0e13;
+    --panel:#11161d;
+    --panel-2:#161d26;
+    --line:#232d39;
+    --text-hi:#eaf2f7;
+    --text-lo:#7c8a97;
+    --phosphor:#4dffa0;
+    --phosphor-dim:#1d5c40;
+    --amber:#ffb445;
+    --amber-dim:#5c4520;
+    --danger:#ff4f64;
+    --danger-dim:#5c2028;
+    --cyan:#57c7ff;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top, #121822 0%, var(--ink) 60%);
+    color:var(--text-hi);
+    font-family:var(--sans);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .device{
+    width:100%;
+    max-width:920px;
+    background:linear-gradient(180deg, var(--panel) 0%, #0d1218 100%);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+    overflow:hidden;
+  }
+  .nameplate{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:20px 26px;
+    border-bottom:1px solid var(--line);
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 8px);
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-mark{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.14em;
+    color:var(--phosphor);
+    text-shadow:0 0 12px rgba(77,255,160,0.45);
+  }
+  .brand-sub{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:20px;
+    letter-spacing:0.01em;
+  }
+  .unit-badge{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.06em;
+    color:var(--cyan);
+    border:1px solid #1c3a4d;
+    background:#0c1a22;
+    padding:6px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+
+  .panel-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--line);
+  }
+  @media (max-width:760px){
+    .panel-grid{grid-template-columns:1fr;}
+  }
+  .controls, .readout{
+    background:var(--panel);
+    padding:26px;
+  }
+
+  .control-group{margin-bottom:26px;}
+  .control-group:last-of-type{margin-bottom:14px;}
+  .control-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .control-head label{
+    font-size:13px;
+    font-weight:600;
+    color:var(--text-hi);
+  }
+  .unit-toggle{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .unit-btn{
+    font-family:var(--mono);
+    font-size:11px;
+    background:var(--panel-2);
+    color:var(--text-lo);
+    border:none;
+    padding:5px 10px;
+    cursor:pointer;
+  }
+  .unit-btn.active{background:var(--phosphor-dim);color:var(--phosphor);}
+
+  input[type="range"]{
+    -webkit-appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:var(--line);
+    outline:none;
+    margin:6px 0 12px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--text-hi);
+    border:3px solid var(--phosphor);
+    cursor:pointer;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;
+    background:var(--text-hi);
+    border:3px solid var(--phosphor);
+    cursor:pointer;
+  }
+
+  .control-readout{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 12px;
+  }
+  .control-readout input[type="number"]{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text-hi);
+    font-family:var(--mono);
+    font-size:16px;
+    width:100%;
+  }
+  .unit-label{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-lo);
+  }
+
+  .containment-toggle{
+    margin-top:22px;
+    padding-top:18px;
+    border-top:1px dashed var(--line);
+  }
+  .switch-label{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:12.5px;
+    color:var(--text-lo);
+    cursor:pointer;
+    line-height:1.5;
+  }
+  .switch-label input{accent-color:var(--phosphor);margin-top:2px;}
+
+  /* Readout column */
+  .gauge-wrap{position:relative;display:flex;flex-direction:column;align-items:center;}
+  #gauge{width:100%;max-width:320px;}
+  .gauge-value{
+    text-align:center;
+    margin-top:-18px;
+  }
+  .gauge-value span{
+    font-family:var(--mono);
+    font-size:34px;
+    font-weight:600;
+    display:block;
+    letter-spacing:0.01em;
+  }
+  .gauge-value small{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-lo);
+    letter-spacing:0.08em;
+  }
+
+  .lcd{
+    margin-top:22px;
+    background:#0a1410;
+    border:1px solid #1c3324;
+    border-radius:10px;
+    padding:14px 16px;
+    font-family:var(--mono);
+  }
+  .lcd-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:6px 0;
+    font-size:13px;
+    color:#8fb5a0;
+    border-bottom:1px solid rgba(77,255,160,0.08);
+  }
+  .lcd-row:last-child{border-bottom:none;}
+  .lcd-row strong{color:var(--phosphor);font-size:14px;}
+  .status-tag{
+    padding:2px 10px;
+    border-radius:5px;
+    background:var(--phosphor-dim);
+    color:var(--phosphor) !important;
+  }
+  .status-tag.warn{background:var(--amber-dim);color:var(--amber) !important;}
+  .status-tag.danger{background:var(--danger-dim);color:var(--danger) !important;}
+
+  .verdict-text{
+    margin:16px 2px 0;
+    font-size:12.5px;
+    line-height:1.6;
+    color:var(--text-lo);
+  }
+
+  .range-section{
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    padding:26px;
+  }
+  .range-section-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .range-section-head h3{
+    margin:0;
+    font-size:14px;
+    font-weight:600;
+  }
+  .range-section-head p{
+    margin:2px 0 0;
+    font-size:11.5px;
+    color:var(--text-lo);
+  }
+  .range-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:26px;
+  }
+  @media (max-width:760px){
+    .range-grid{grid-template-columns:1fr;}
+  }
+  .preset-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .preset-btn{
+    font-family:var(--mono);
+    font-size:10.5px;
+    background:var(--panel-2);
+    color:var(--text-lo);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:5px 9px;
+    cursor:pointer;
+  }
+  .preset-btn:hover{color:var(--text-hi);}
+
+  .range-result{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:18px 20px;
+  }
+  .range-result-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:12px;
+  }
+  .range-result-row span{font-size:12px;color:var(--text-lo);}
+  .range-result-row strong{font-family:var(--mono);font-size:15px;}
+
+  .rx-bar{
+    position:relative;
+    height:10px;
+    border-radius:5px;
+    background:linear-gradient(90deg, var(--danger) 0%, var(--danger) 25%, var(--amber) 45%, var(--phosphor-dim) 70%, #1b232d 100%);
+    margin:14px 0 6px;
+    overflow:visible;
+  }
+  .rx-marker{
+    position:absolute;
+    top:-5px;
+    width:3px;
+    height:20px;
+    background:var(--text-hi);
+    border-radius:2px;
+    transform:translateX(-50%);
+    transition:left 0.35s ease;
+    box-shadow:0 0 8px rgba(234,242,247,0.6);
+  }
+  .rx-scale{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--mono);
+    font-size:9.5px;
+    color:var(--text-lo);
+  }
+  .range-verdict{
+    margin:14px 2px 0;
+    font-size:12px;
+    line-height:1.6;
+    color:var(--text-lo);
+  }
+
+  .spec-strip{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    border-top:1px solid var(--line);
+  }
+  .spec-item{
+    padding:16px 18px;
+    border-right:1px solid var(--line);
+  }
+  .spec-item:last-child{border-right:none;}
+  .spec-item span{
+    display:block;
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:14px;
+    color:var(--text-hi);
+    margin-bottom:4px;
+  }
+  .spec-item small{color:var(--text-lo);font-size:11.5px;line-height:1.4;}
+
+  .disclaimer{
+    font-size:11px;
+    color:var(--text-lo);
+    text-align:center;
+    padding:14px 26px 20px;
+    margin:0;
+    border-top:1px solid var(--line);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #needleGroup{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="device">
+
+  <div class="nameplate">
+    <div class="brand">
+      <span class="brand-mark">RF · CAL — MODEL EF-01</span>
+      <span class="brand-sub">EIRP Field Calculator</span>
+    </div>
+    <div class="unit-badge">ISM 2.4 / 5 GHz REF</div>
+  </div>
+
+  <div class="panel-grid">
+
+    <section class="controls">
+
+      <div class="control-group">
+        <div class="control-head">
+          <label for="txPowerNum">Daya Pemancar (TX Power)</label>
+          <div class="unit-toggle">
+            <button type="button" class="unit-btn active" data-unit="dbm">dBm</button>
+            <button type="button" class="unit-btn" data-unit="mw">mW</button>
+          </div>
+        </div>
+        <input type="range" id="txPowerRange" min="-10" max="40" step="0.5" value="0">
+        <div class="control-readout">
+          <input type="number" id="txPowerNum" value="0" step="0.5">
+          <span class="unit-label" id="txUnitLabel">dBm</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-head"><label for="gainNum">Gain Antena</label></div>
+        <input type="range" id="gainRange" min="-5" max="30" step="0.5" value="2">
+        <div class="control-readout">
+          <input type="number" id="gainNum" value="2" step="0.5">
+          <span class="unit-label">dBi</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-head"><label for="lossNum">Rugi Kabel / Konektor</label></div>
+        <input type="range" id="lossRange" min="0" max="10" step="0.1" value="0.5">
+        <div class="control-readout">
+          <input type="number" id="lossNum" value="0.5" step="0.1">
+          <span class="unit-label">dB</span>
+        </div>
+      </div>
+
+      <div class="containment-toggle">
+        <label class="switch-label">
+          <input type="checkbox" id="dummyLoad">
+          <span>Sinyal diarahkan ke dummy load / shielded enclosure (tidak dipancarkan ke udara bebas)</span>
+        </label>
+      </div>
+
+    </section>
+
+    <section class="readout">
+
+      <div class="gauge-wrap">
+        <svg id="gauge" viewBox="0 0 300 170">
+          <!-- backdrop track -->
+          <path d="M30,150 A120,120 0 0,1 270,150" fill="none" stroke="#1b232d" stroke-width="20" stroke-linecap="round"/>
+          <!-- zone: aman -->
+          <path d="M30,150 A120,120 0 0,1 150,30" fill="none" stroke="#1d5c40" stroke-width="14" stroke-linecap="round"/>
+          <!-- zone: perlu izin -->
+          <path d="M150,30 A120,120 0 0,1 210,46.1" fill="none" stroke="#5c4520" stroke-width="14"/>
+          <!-- zone: bahaya -->
+          <path d="M210,46.1 A120,120 0 0,1 270,150" fill="none" stroke="#5c2028" stroke-width="14" stroke-linecap="round"/>
+
+          <!-- ticks -->
+          <g font-family="IBM Plex Mono, monospace" font-size="10" fill="#7c8a97" text-anchor="middle">
+            <text x="18" y="153">-10</text>
+            <text x="33" y="86">0</text>
+            <text x="83" y="37">10</text>
+            <text x="150" y="20">20</text>
+            <text x="220" y="37">30</text>
+            <text x="270" y="86">40</text>
+            <text x="285" y="153">50</text>
+          </g>
+
+          <!-- needle -->
+          <g id="needleGroup" style="transform-origin:150px 150px; transform:rotate(-90deg); transition:transform 0.35s ease;">
+            <line x1="150" y1="150" x2="150" y2="38" stroke="#eaf2f7" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <circle cx="150" cy="150" r="9" fill="#eaf2f7"/>
+          <circle cx="150" cy="150" r="4" fill="#0a0e13"/>
+        </svg>
+
+        <div class="gauge-value">
+          <span id="eirpDbm">0.0</span>
+          <small>dBm EIRP EFEKTIF</small>
+        </div>
+      </div>
+
+      <div class="lcd">
+        <div class="lcd-row"><span>EIRP (mW/W)</span><strong id="lcdEirpMw">1.0 mW</strong></div>
+        <div class="lcd-row"><span>Daya Output TX</span><strong id="lcdPower">1.0 mW</strong></div>
+        <div class="lcd-row"><span>Status</span><strong id="lcdStatus" class="status-tag">AMAN</strong></div>
+      </div>
+
+      <p class="verdict-text" id="verdictText">Menghitung...</p>
+
+    </section>
+
+  </div>
+
+  <div class="range-section">
+    <div class="range-section-head">
+      <div>
+        <h3>Estimasi Jangkauan &amp; Interferensi</h3>
+        <p>Perkiraan daya yang diterima perangkat lain pada jarak tertentu (Free-Space Path Loss)</p>
+      </div>
+      <div class="unit-toggle">
+        <button type="button" class="unit-btn active" data-freq="2400">2.4 GHz</button>
+        <button type="button" class="unit-btn" data-freq="5800">5 GHz</button>
+      </div>
+    </div>
+
+    <div class="range-grid">
+      <div>
+        <div class="control-group">
+          <div class="control-head"><label for="distNum">Jarak ke Perangkat Lain</label></div>
+          <input type="range" id="distRange" min="0.1" max="100" step="0.1" value="5">
+          <div class="control-readout">
+            <input type="number" id="distNum" value="5" step="0.1">
+            <span class="unit-label">meter</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-head"><label for="obstNum">Rugi Halangan (Tembok/Beton)</label></div>
+          <input type="range" id="obstRange" min="0" max="40" step="1" value="0">
+          <div class="control-readout">
+            <input type="number" id="obstNum" value="0" step="1">
+            <span class="unit-label">dB</span>
+          </div>
+          <div class="preset-row">
+            <button type="button" class="preset-btn" data-obst="0">Tanpa Halangan</button>
+            <button type="button" class="preset-btn" data-obst="6">1 Dinding Bata</button>
+            <button type="button" class="preset-btn" data-obst="15">Dinding Beton</button>
+            <button type="button" class="preset-btn" data-obst="25">Shielded Box</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="range-result">
+        <div class="range-result-row"><span>Free-Space Path Loss</span><strong id="fsplOut">0.0 dB</strong></div>
+        <div class="range-result-row"><span>Daya Diterima (estimasi)</span><strong id="rxPowerOut">0.0 dBm</strong></div>
+
+        <div class="rx-bar"><div class="rx-marker" id="rxMarker" style="left:100%;"></div></div>
+        <div class="rx-scale"><span>-30</span><span>-50</span><span>-70</span><span>-90</span><span>-110 dBm</span></div>
+
+        <p class="range-verdict" id="rangeVerdict">Menghitung...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-strip">
+    <div class="spec-item"><span>≤ 20 dBm</span><small>Kisaran umum batas unlicensed ISM 2.4/5GHz</small></div>
+    <div class="spec-item"><span>20–30 dBm</span><small>Umumnya butuh sertifikasi / izin khusus</small></div>
+    <div class="spec-item"><span>&gt; 30 dBm</span><small>Berpotensi masuk kategori pengacau sinyal</small></div>
+  </div>
+
+  <p class="disclaimer">Acuan umum untuk edukasi RF — bukan pengganti pengukuran spectrum analyzer terkalibrasi atau kepastian aturan SDPPI/Kominfo yang berlaku di wilayah Anda.</p>
+
+</div>
+
+<script>
+(function(){
+  const txPowerRange = document.getElementById('txPowerRange');
+  const txPowerNum = document.getElementById('txPowerNum');
+  const txUnitLabel = document.getElementById('txUnitLabel');
+  const unitBtns = document.querySelectorAll('.unit-btn');
+  const gainRange = document.getElementById('gainRange');
+  const gainNum = document.getElementById('gainNum');
+  const lossRange = document.getElementById('lossRange');
+  const lossNum = document.getElementById('lossNum');
+  const dummyLoad = document.getElementById('dummyLoad');
+
+  const eirpDbmEl = document.getElementById('eirpDbm');
+  const lcdEirpMw = document.getElementById('lcdEirpMw');
+  const lcdPower = document.getElementById('lcdPower');
+  const lcdStatus = document.getElementById('lcdStatus');
+  const verdictText = document.getElementById('verdictText');
+  const needleGroup = document.getElementById('needleGroup');
+
+  const freqBtns = document.querySelectorAll('[data-freq]');
+  const distRange = document.getElementById('distRange');
+  const distNum = document.getElementById('distNum');
+  const obstRange = document.getElementById('obstRange');
+  const obstNum = document.getElementById('obstNum');
+  const presetBtns = document.querySelectorAll('.preset-btn');
+  const fsplOut = document.getElementById('fsplOut');
+  const rxPowerOut = document.getElementById('rxPowerOut');
+  const rxMarker = document.getElementById('rxMarker');
+  const rangeVerdict = document.getElementById('rangeVerdict');
+
+  let txPowerDbm = 0;
+  let currentUnit = 'dbm';
+  let freqMHz = 2400;
+  let lastEirp = 0;
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const dbmToMw = dbm => Math.pow(10, dbm / 10);
+  const mwToDbm = mw => 10 * Math.log10(Math.max(mw, 0.0001));
+
+  function formatPower(mw){
+    if (mw >= 1000) return (mw/1000).toFixed(2) + ' W';
+    if (mw < 1) return mw.toFixed(3) + ' mW';
+    return mw.toFixed(2) + ' mW';
+  }
+
+  function bindPair(range, num, onChange){
+    range.addEventListener('input', () => { num.value = range.value; onChange(); });
+    num.addEventListener('input', () => {
+      const v = clamp(parseFloat(num.value || 0), parseFloat(range.min), parseFloat(range.max));
+      range.value = v;
+      onChange();
+    });
+  }
+
+  bindPair(gainRange, gainNum, recompute);
+  bindPair(lossRange, lossNum, recompute);
+  bindPair(distRange, distNum, updateRangeEstimate);
+  bindPair(obstRange, obstNum, updateRangeEstimate);
+  dummyLoad.addEventListener('change', recompute);
+
+  freqBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      freqBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      freqMHz = parseFloat(btn.dataset.freq);
+      updateRangeEstimate();
+    });
+  });
+
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = parseFloat(btn.dataset.obst);
+      obstRange.value = v;
+      obstNum.value = v;
+      updateRangeEstimate();
+    });
+  });
+
+  txPowerRange.addEventListener('input', () => {
+    txPowerDbm = parseFloat(txPowerRange.value);
+    syncTxDisplay();
+    recompute();
+  });
+
+  txPowerNum.addEventListener('input', () => {
+    const raw = parseFloat(txPowerNum.value || 0);
+    txPowerDbm = currentUnit === 'dbm' ? raw : mwToDbm(raw);
+    txPowerRange.value = clamp(txPowerDbm, -10, 40);
+    recompute();
+  });
+
+  unitBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      unitBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentUnit = btn.dataset.unit;
+      txUnitLabel.textContent = currentUnit === 'dbm' ? 'dBm' : 'mW';
+      syncTxDisplay();
+    });
+  });
+
+  function syncTxDisplay(){
+    if (currentUnit === 'dbm'){
+      txPowerNum.value = txPowerDbm.toFixed(1);
+    } else {
+      txPowerNum.value = dbmToMw(txPowerDbm).toFixed(2);
+    }
+  }
+
+  function recompute(){
+    const gainDbi = parseFloat(gainNum.value || 0);
+    const lossDb = parseFloat(lossNum.value || 0);
+    const eirp = txPowerDbm + gainDbi - lossDb;
+    const isolated = dummyLoad.checked;
+
+    eirpDbmEl.textContent = eirp.toFixed(1);
+    lcdEirpMw.textContent = formatPower(dbmToMw(eirp));
+    lcdPower.textContent = formatPower(dbmToMw(txPowerDbm));
+
+    let statusText, statusClass, verdict;
+    if (isolated){
+      statusText = 'AMAN (TERISOLASI)';
+      statusClass = '';
+      verdict = 'Sinyal diarahkan ke dummy load / shielded enclosure — emisi efektif ke lingkungan luar mendekati nol, terlepas dari nilai EIRP internal di atas. Validasi tetap dianjurkan dengan SDR portable di luar enclosure.';
+    } else if (eirp <= 20){
+      statusText = 'AMAN';
+      statusClass = '';
+      verdict = 'EIRP berada dalam kisaran umum batas unlicensed ISM band. Tetap perhatikan jangkauan aktual dan hindari mengarah ke perangkat lain dalam waktu lama.';
+    } else if (eirp <= 30){
+      statusText = 'PERLU IZIN';
+      statusClass = 'warn';
+      verdict = 'EIRP melewati kisaran umum unlicensed. Pada level ini berpotensi memerlukan sertifikasi atau izin khusus tergantung sub-band dan regulasi setempat (SDPPI/Kominfo).';
+    } else {
+      statusText = 'BAHAYA';
+      statusClass = 'danger';
+      verdict = 'EIRP setinggi ini berpotensi masuk kategori alat pengacau sinyal (jammer) dan dapat mengganggu WiFi, Bluetooth, atau perangkat lain di sekitarnya. Gunakan dummy load / shielded enclosure, atau turunkan daya dan gain.';
+    }
+    lcdStatus.textContent = statusText;
+    lcdStatus.className = 'status-tag ' + statusClass;
+    verdictText.textContent = verdict;
+
+    const t = clamp((eirp + 10) / 60, 0, 1);
+    const rotation = 180 * t - 90;
+    needleGroup.style.transform = `rotate(${rotation}deg)`;
+
+    lastEirp = eirp;
+    updateRangeEstimate();
+  }
+
+  function updateRangeEstimate(){
+    const distM = Math.max(parseFloat(distNum.value || 0.1), 0.1);
+    const obstDb = parseFloat(obstNum.value || 0);
+
+    // Free-Space Path Loss (jarak dalam meter, frekuensi dalam MHz)
+    const fspl = 20 * Math.log10(distM) + 20 * Math.log10(freqMHz) - 27.55;
+    const rxPower = lastEirp - fspl - obstDb;
+
+    fsplOut.textContent = fspl.toFixed(1) + ' dB';
+    rxPowerOut.textContent = rxPower.toFixed(1) + ' dBm';
+
+    // marker posisi pada bar skala -30 (kiri, kuat) sampai -110 dBm (kanan, lemah)
+    const pct = clamp((rxPower - (-110)) / ((-30) - (-110)), 0, 1);
+    rxMarker.style.left = (pct * 100) + '%';
+
+    let verdict;
+    if (dummyLoad.checked){
+      verdict = 'Estimasi ini mengasumsikan sinyal terpancar ke udara — tidak relevan selama sinyal masih diarahkan ke dummy load / shielded enclosure.';
+    } else if (rxPower > -70){
+      verdict = 'Pada jarak ini, sinyal masih cukup kuat untuk berpotensi mengganggu link WiFi/Bluetooth di sekitarnya secara signifikan.';
+    } else if (rxPower > -90){
+      verdict = 'Sinyal kemungkinan masih terdeteksi perangkat lain dan bisa menaikkan noise floor, meski dampaknya lebih ringan.';
+    } else {
+      verdict = 'Pada jarak dan halangan ini, sinyal diperkirakan sudah di bawah noise floor umum perangkat WiFi/Bluetooth — kemungkinan tidak terdeteksi.';
+    }
+    rangeVerdict.textContent = verdict;
+  }
+
+  syncTxDisplay();
+  recompute();
+})();
+</script>
+</body>
+</html>
