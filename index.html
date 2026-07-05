@@ -71,6 +71,25 @@
     font-size:20px;
     letter-spacing:0.01em;
   }
+  .nameplate-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .reset-btn{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.04em;
+    color:var(--text-lo);
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:color 0.15s ease, border-color 0.15s ease;
+  }
+  .reset-btn:hover{color:var(--text-hi);border-color:#39485a;}
+  .reset-btn:active{color:var(--phosphor);border-color:var(--phosphor-dim);}
   .unit-badge{
     font-family:var(--mono);
     font-size:11px;
@@ -206,6 +225,12 @@
     color:var(--text-lo);
     letter-spacing:0.08em;
   }
+  .gauge-value.off-scale span{color:var(--amber);}
+  .gauge-value.off-scale small::after{
+    content:" · DI LUAR SKALA GAUGE";
+    color:var(--amber);
+  }
+  .gauge-wrap.isolated{opacity:0.4;filter:grayscale(0.6);transition:opacity 0.25s ease, filter 0.25s ease;}
 
   .lcd{
     margin-top:22px;
@@ -338,6 +363,13 @@
     line-height:1.6;
     color:var(--text-lo);
   }
+  .range-assumption{
+    margin:10px 2px 0;
+    font-size:10.5px;
+    line-height:1.5;
+    color:#576270;
+    font-style:italic;
+  }
 
   .spec-strip{
     display:grid;
@@ -368,6 +400,99 @@
     border-top:1px solid var(--line);
   }
 
+  .pattern-section{
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    padding:26px;
+  }
+  .pattern-type-row{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .pattern-type-btn{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.03em;
+    background:var(--panel-2);
+    color:var(--text-lo);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    flex:1;
+    min-width:120px;
+    text-align:center;
+  }
+  .pattern-type-btn.active{background:var(--phosphor-dim);color:var(--phosphor);border-color:var(--phosphor-dim);}
+  .sector-preset-row{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin:10px 0 4px;
+  }
+  .pattern-metrics{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:16px;
+  }
+  .pattern-metric{
+    background:var(--panel-2);
+    padding:12px 14px;
+  }
+  .pattern-metric span{
+    display:block;
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:16px;
+    color:var(--text-hi);
+    margin-bottom:3px;
+  }
+  .pattern-metric small{color:var(--text-lo);font-size:10.5px;letter-spacing:0.02em;}
+  .pattern-metric .flat-label{color:var(--cyan);}
+  .pattern-charts{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-top:20px;
+  }
+  @media (max-width:760px){
+    .pattern-charts{grid-template-columns:1fr;}
+  }
+  .polar-card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .polar-card h4{
+    margin:0 0 10px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-hi);
+    align-self:flex-start;
+  }
+  .polar-card svg{width:100%;max-width:230px;}
+  .polar-grid-line{fill:none;stroke:#232d39;stroke-width:1;}
+  .polar-axis-line{stroke:#2c3948;stroke-width:1;}
+  .polar-lobe{
+    fill:rgba(77,255,160,0.16);
+    stroke:var(--phosphor);
+    stroke-width:2;
+    transition:d 0.2s ease;
+  }
+  .polar-boresight{stroke:var(--amber);stroke-width:1.5;stroke-dasharray:3 3;}
+  .polar-label{font-family:var(--mono);font-size:8.5px;fill:var(--text-lo);}
+
   @media (prefers-reduced-motion: reduce){
     #needleGroup{transition:none !important;}
   }
@@ -381,6 +506,9 @@
       <span class="brand-mark">RF · CAL — MODEL EF-01</span>
       <span class="brand-sub">EIRP Field Calculator</span>
     </div>
+    <div class="nameplate-actions">
+      <button type="button" id="resetBtn" class="reset-btn" title="Kembalikan semua nilai ke default">⟲ RESET</button>
+    </div>
   </div>
 
   <div class="panel-grid">
@@ -389,7 +517,18 @@
 
       <div class="control-group">
         <div class="control-head">
-          <label for="txPowerNum">Daya Pemancar (TX Power)</label>
+          <label id="sourceModeLabel">Konfigurasi Sumber Daya</label>
+        </div>
+        <div class="unit-toggle" style="width:100%;">
+          <button type="button" class="unit-btn source-mode-btn active" data-mode="independent" style="flex:1;">N Pemancar Independen</button>
+          <button type="button" class="unit-btn source-mode-btn" data-mode="splitter" style="flex:1;">1 Modul + Splitter</button>
+        </div>
+        <p class="range-assumption" id="sourceModeHint" style="margin-top:8px;">Tiap antena punya pemancar/modul sendiri dengan daya yang sama.</p>
+      </div>
+
+      <div class="control-group">
+        <div class="control-head">
+          <label for="txPowerNum" id="txPowerLabel">Daya Pemancar (TX Power)</label>
           <div class="unit-toggle">
             <button type="button" class="unit-btn active" data-unit="dbm">dBm</button>
             <button type="button" class="unit-btn" data-unit="mw">mW</button>
@@ -403,7 +542,7 @@
       </div>
 
       <div class="control-group">
-        <div class="control-head"><label for="gainNum">Gain Antena</label></div>
+        <div class="control-head"><label for="gainNum">Gain per Antena</label></div>
         <input type="range" id="gainRange" min="-5" max="30" step="0.5" value="2">
         <div class="control-readout">
           <input type="number" id="gainNum" value="2" step="0.5">
@@ -412,7 +551,40 @@
       </div>
 
       <div class="control-group">
-        <div class="control-head"><label for="lossNum">Rugi Kabel / Konektor</label></div>
+        <div class="control-head">
+          <label for="antCountNum">Jumlah Antena (Array)</label>
+          <span class="unit-badge" id="arrayGainBadge" style="padding:4px 10px;font-size:10.5px;">+0.0 dB ARRAY</span>
+        </div>
+        <input type="range" id="antCountRange" min="1" max="12" step="1" value="1">
+        <div class="control-readout">
+          <input type="number" id="antCountNum" value="1" step="1" min="1" max="12">
+          <span class="unit-label">unit</span>
+        </div>
+      </div>
+
+      <div class="control-group" id="splitterControls" style="display:none;">
+        <div class="control-head"><label for="splitterExtraNum">Rugi Splitter Tambahan (real-world, di luar rugi split ideal)</label></div>
+        <input type="range" id="splitterExtraRange" min="0" max="3" step="0.1" value="0.5">
+        <div class="control-readout">
+          <input type="number" id="splitterExtraNum" value="0.5" step="0.1">
+          <span class="unit-label">dB</span>
+        </div>
+        <p class="range-assumption">Rugi split ideal 1→N otomatis dihitung (10·log10 N). Nilai ini menambahkan rugi insertion loss splitter fisik yang tidak ideal.</p>
+      </div>
+
+      <div class="control-group">
+        <div class="control-head">
+          <label id="phaseModeLabel">Fase Antar-Antena</label>
+        </div>
+        <div class="unit-toggle" style="width:100%;">
+          <button type="button" class="unit-btn phase-mode-btn active" data-phase="coherent" style="flex:1;">Sefase (Phased Array)</button>
+          <button type="button" class="unit-btn phase-mode-btn" data-phase="incoherent" style="flex:1;">Tidak Sefase (Acak)</button>
+        </div>
+        <p class="range-assumption" id="phaseModeHint" style="margin-top:8px;">Panjang kabel & fase tiap antena disamakan — sinyal saling menguatkan terarah (dapat gain array penuh).</p>
+      </div>
+
+      <div class="control-group">
+        <div class="control-head"><label for="lossNum">Rugi Kabel / Konektor (per antena)</label></div>
         <input type="range" id="lossRange" min="0" max="10" step="0.1" value="0.5">
         <div class="control-readout">
           <input type="number" id="lossNum" value="0.5" step="0.1">
@@ -431,7 +603,7 @@
 
     <section class="readout">
 
-      <div class="gauge-wrap">
+      <div class="gauge-wrap" id="gaugeWrap">
         <svg id="gauge" viewBox="0 0 300 170">
           <!-- backdrop track -->
           <path d="M30,150 A120,120 0 0,1 270,150" fill="none" stroke="#1b232d" stroke-width="20" stroke-linecap="round"/>
@@ -461,22 +633,92 @@
           <circle cx="150" cy="150" r="4" fill="#0a0e13"/>
         </svg>
 
-        <div class="gauge-value">
+        <div class="gauge-value" aria-live="polite" id="gaugeValueWrap">
           <span id="eirpDbm">0.0</span>
-          <small>dBm EIRP EFEKTIF</small>
+          <small>dBm EIRP TOTAL ARRAY</small>
         </div>
       </div>
 
-      <div class="lcd">
-        <div class="lcd-row"><span>EIRP (mW/W)</span><strong id="lcdEirpMw">1.0 mW</strong></div>
-        <div class="lcd-row"><span>Daya Output TX</span><strong id="lcdPower">1.0 mW</strong></div>
+      <div class="lcd" aria-live="polite">
+        <div class="lcd-row" id="lcdSplitterRow" style="display:none;"><span>Rugi Splitter Total</span><strong id="lcdSplitterLoss">0.0 dB</strong></div>
+        <div class="lcd-row"><span>Daya per Antena</span><strong id="lcdPerAntPower">1.0 mW</strong></div>
+        <div class="lcd-row"><span>EIRP per Antena</span><strong id="lcdEirpSingle">1.0 mW</strong></div>
+        <div class="lcd-row"><span>EIRP Total Array</span><strong id="lcdEirpMw">1.0 mW</strong></div>
+        <div class="lcd-row"><span>Daya Output Modul/TX</span><strong id="lcdPower">1.0 mW</strong></div>
+        <div class="lcd-row"><span>Jumlah Antena</span><strong id="lcdAntCount">1 unit</strong></div>
         <div class="lcd-row"><span>Status</span><strong id="lcdStatus" class="status-tag">AMAN</strong></div>
       </div>
 
-      <p class="verdict-text" id="verdictText">Menghitung...</p>
+      <p class="verdict-text" id="verdictText" aria-live="polite">Menghitung...</p>
 
     </section>
 
+  </div>
+
+  <div class="pattern-section">
+    <div class="range-section-head">
+      <div>
+        <h3>Pola Radiasi &amp; Tingkat Kepipihan Antena</h3>
+        <p>Estimasi bentuk pola pancaran (beamwidth) &amp; indeks kepipihan dari Gain (dBi) &amp; EIRP (dBm) di atas — pendekatan edukatif, bukan data pabrikan.</p>
+      </div>
+    </div>
+
+    <div class="pattern-type-row">
+      <button type="button" class="pattern-type-btn active" data-pattern="omni">Omni (360°)</button>
+      <button type="button" class="pattern-type-btn" data-pattern="sector">Sektoral</button>
+      <button type="button" class="pattern-type-btn" data-pattern="directional">Direksional (Yagi/Panel/Grid)</button>
+    </div>
+
+    <div class="sector-preset-row" id="sectorPresetRow" style="display:none;">
+      <button type="button" class="preset-btn sector-preset active" data-sector="60">60°</button>
+      <button type="button" class="preset-btn sector-preset" data-sector="65">65°</button>
+      <button type="button" class="preset-btn sector-preset" data-sector="90">90°</button>
+      <button type="button" class="preset-btn sector-preset" data-sector="120">120°</button>
+      <button type="button" class="preset-btn sector-preset" data-sector="180">180°</button>
+    </div>
+    <p class="range-assumption" id="patternHint">Antena omni memancar 360° mendatar; makin tinggi gain (dBi), makin sempit sudut vertikalnya — pola makin "pipih" seperti piringan tipis.</p>
+
+    <div class="pattern-metrics">
+      <div class="pattern-metric"><span id="mHoriz">360.0°</span><small>Beamwidth Horizontal (Azimuth)</small></div>
+      <div class="pattern-metric"><span id="mVert">70.0°</span><small>Beamwidth Vertikal (Elevasi)</small></div>
+      <div class="pattern-metric"><span id="mFlat" class="flat-label">5.1×</span><small>Indeks Kepipihan (H/V) — <span id="mFlatLabel">Agak Pipih</span></small></div>
+    </div>
+
+    <div class="pattern-charts">
+      <div class="polar-card">
+        <h4>Tampak Atas — Azimuth (Horizontal)</h4>
+        <svg viewBox="0 0 240 240" id="azSvg">
+          <circle class="polar-grid-line" cx="120" cy="120" r="100"/>
+          <circle class="polar-grid-line" cx="120" cy="120" r="66.6"/>
+          <circle class="polar-grid-line" cx="120" cy="120" r="33.3"/>
+          <line class="polar-axis-line" x1="120" y1="20" x2="120" y2="220"/>
+          <line class="polar-axis-line" x1="20" y1="120" x2="220" y2="120"/>
+          <line class="polar-boresight" x1="120" y1="120" x2="120" y2="22"/>
+          <path id="azPath" class="polar-lobe" d=""/>
+          <text class="polar-label" x="122" y="16" text-anchor="middle">0°</text>
+          <text class="polar-label" x="228" y="123">90°</text>
+          <text class="polar-label" x="122" y="234" text-anchor="middle">180°</text>
+          <text class="polar-label" x="8" y="123">270°</text>
+        </svg>
+      </div>
+      <div class="polar-card">
+        <h4>Tampak Samping — Elevasi (Vertikal)</h4>
+        <svg viewBox="0 0 240 240" id="elSvg">
+          <circle class="polar-grid-line" cx="120" cy="120" r="100"/>
+          <circle class="polar-grid-line" cx="120" cy="120" r="66.6"/>
+          <circle class="polar-grid-line" cx="120" cy="120" r="33.3"/>
+          <line class="polar-axis-line" x1="120" y1="20" x2="120" y2="220"/>
+          <line class="polar-axis-line" x1="20" y1="120" x2="220" y2="120"/>
+          <line class="polar-boresight" x1="120" y1="120" x2="222" y2="120"/>
+          <path id="elPath" class="polar-lobe" d=""/>
+          <text class="polar-label" x="122" y="16" text-anchor="middle">atas</text>
+          <text class="polar-label" x="228" y="123">depan</text>
+          <text class="polar-label" x="122" y="234" text-anchor="middle">bawah</text>
+          <text class="polar-label" x="8" y="123">belakang</text>
+        </svg>
+      </div>
+    </div>
+    <p class="range-assumption">Bentuk lobe dihitung dari beamwidth (rumus pendekatan directivity D≈41253/(θH·θV), model daya cos^n). Ukuran lobe (besar/kecil) merepresentasikan EIRP relatif saat ini secara visual — bukan skala jarak sebenarnya.</p>
   </div>
 
   <div class="range-section">
@@ -525,7 +767,8 @@
         <div class="rx-bar"><div class="rx-marker" id="rxMarker" style="left:100%;"></div></div>
         <div class="rx-scale"><span>-30</span><span>-50</span><span>-70</span><span>-90</span><span>-110 dBm</span></div>
 
-        <p class="range-verdict" id="rangeVerdict">Menghitung...</p>
+        <p class="range-verdict" id="rangeVerdict" aria-live="polite">Menghitung...</p>
+        <p class="range-assumption">Asumsi: line-of-sight, gain antena penerima 0 dBi, tanpa margin fading tambahan.</p>
       </div>
     </div>
   </div>
@@ -536,7 +779,7 @@
     <div class="spec-item"><span>&gt; 30 dBm</span><small>Berpotensi masuk kategori pengacau sinyal</small></div>
   </div>
 
-  <p class="disclaimer">Acuan umum untuk edukasi RF — bukan pengganti pengukuran spectrum analyzer terkalibrasi atau kepastian aturan SDPPI/Kominfo yang berlaku di wilayah Anda.</p>
+  <p class="disclaimer">Acuan umum untuk edukasi RF — bukan pengganti pengukuran spectrum analyzer terkalibrasi atau kepastian aturan SDPPI/Kominfo yang berlaku di wilayah Anda. Batas EIRP dapat berbeda tergantung sub-band (mis. WiFi 5 GHz UNII dengan DFS) dan jenis perangkat — selalu periksa regulasi spesifik sebelum digunakan di lapangan.</p>
 
 </div>
 
@@ -548,16 +791,35 @@
   const unitBtns = document.querySelectorAll('.unit-btn');
   const gainRange = document.getElementById('gainRange');
   const gainNum = document.getElementById('gainNum');
+  const antCountRange = document.getElementById('antCountRange');
+  const antCountNum = document.getElementById('antCountNum');
+  const arrayGainBadge = document.getElementById('arrayGainBadge');
   const lossRange = document.getElementById('lossRange');
   const lossNum = document.getElementById('lossNum');
   const dummyLoad = document.getElementById('dummyLoad');
 
+  const sourceModeBtns = document.querySelectorAll('.source-mode-btn');
+  const sourceModeHint = document.getElementById('sourceModeHint');
+  const txPowerLabel = document.getElementById('txPowerLabel');
+  const splitterControls = document.getElementById('splitterControls');
+  const splitterExtraRange = document.getElementById('splitterExtraRange');
+  const splitterExtraNum = document.getElementById('splitterExtraNum');
+  const phaseModeBtns = document.querySelectorAll('.phase-mode-btn');
+  const phaseModeHint = document.getElementById('phaseModeHint');
+
+  const lcdSplitterRow = document.getElementById('lcdSplitterRow');
+  const lcdSplitterLoss = document.getElementById('lcdSplitterLoss');
+  const lcdPerAntPower = document.getElementById('lcdPerAntPower');
+
   const eirpDbmEl = document.getElementById('eirpDbm');
+  const lcdEirpSingle = document.getElementById('lcdEirpSingle');
   const lcdEirpMw = document.getElementById('lcdEirpMw');
+  const lcdAntCount = document.getElementById('lcdAntCount');
   const lcdPower = document.getElementById('lcdPower');
   const lcdStatus = document.getElementById('lcdStatus');
   const verdictText = document.getElementById('verdictText');
   const needleGroup = document.getElementById('needleGroup');
+  const gaugeWrap = document.getElementById('gaugeWrap');
 
   const freqBtns = document.querySelectorAll('[data-freq]');
   const distRange = document.getElementById('distRange');
@@ -569,11 +831,45 @@
   const rxPowerOut = document.getElementById('rxPowerOut');
   const rxMarker = document.getElementById('rxMarker');
   const rangeVerdict = document.getElementById('rangeVerdict');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const patternTypeBtns = document.querySelectorAll('.pattern-type-btn');
+  const sectorPresetRow = document.getElementById('sectorPresetRow');
+  const sectorPresetBtns = document.querySelectorAll('.sector-preset');
+  const patternHint = document.getElementById('patternHint');
+  const mHoriz = document.getElementById('mHoriz');
+  const mVert = document.getElementById('mVert');
+  const mFlat = document.getElementById('mFlat');
+  const mFlatLabel = document.getElementById('mFlatLabel');
+  const azPath = document.getElementById('azPath');
+  const elPath = document.getElementById('elPath');
+
+  let antennaType = 'omni';
+  let sectorH = 90;
+
+  const DEFAULTS = {
+    txPowerDbm: 0,
+    unit: 'dbm',
+    gain: 2,
+    antCount: 1,
+    sourceMode: 'independent',
+    phaseMode: 'coherent',
+    splitterExtra: 0.5,
+    loss: 0.5,
+    dummyLoad: false,
+    freqMHz: 2400,
+    dist: 5,
+    obst: 0,
+    antennaType: 'omni',
+    sectorH: 90
+  };
 
   let txPowerDbm = 0;
   let currentUnit = 'dbm';
   let freqMHz = 2400;
   let lastEirp = 0;
+  let sourceMode = 'independent';
+  let phaseMode = 'coherent';
 
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const dbmToMw = dbm => Math.pow(10, dbm / 10);
@@ -585,20 +881,61 @@
     return mw.toFixed(2) + ' mW';
   }
 
-  function bindPair(range, num, onChange){
-    range.addEventListener('input', () => { num.value = range.value; onChange(); });
+  function bindPair(range, num, onChange, unit){
+    const setValueText = () => {
+      if (unit) range.setAttribute('aria-valuetext', `${range.value} ${unit}`);
+    };
+    setValueText();
+    range.addEventListener('input', () => { num.value = range.value; setValueText(); onChange(); });
     num.addEventListener('input', () => {
       const v = clamp(parseFloat(num.value || 0), parseFloat(range.min), parseFloat(range.max));
       range.value = v;
+      setValueText();
       onChange();
     });
   }
 
-  bindPair(gainRange, gainNum, recompute);
-  bindPair(lossRange, lossNum, recompute);
-  bindPair(distRange, distNum, updateRangeEstimate);
-  bindPair(obstRange, obstNum, updateRangeEstimate);
+  bindPair(gainRange, gainNum, recompute, 'dBi');
+  bindPair(antCountRange, antCountNum, recompute, 'unit');
+  bindPair(lossRange, lossNum, recompute, 'dB');
+  bindPair(splitterExtraRange, splitterExtraNum, recompute, 'dB');
+  bindPair(distRange, distNum, updateRangeEstimate, 'meter');
+  bindPair(obstRange, obstNum, updateRangeEstimate, 'dB');
   dummyLoad.addEventListener('change', recompute);
+
+  sourceModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      sourceModeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sourceMode = btn.dataset.mode;
+      if (sourceMode === 'splitter'){
+        txPowerLabel.textContent = 'Daya Modul (Sebelum Split)';
+        sourceModeHint.textContent = 'Satu modul TX dibagi ke semua antena lewat power splitter — timbul rugi split.';
+        splitterControls.style.display = '';
+        lcdSplitterRow.style.display = '';
+      } else {
+        txPowerLabel.textContent = 'Daya Pemancar (TX Power)';
+        sourceModeHint.textContent = 'Tiap antena punya pemancar/modul sendiri dengan daya yang sama.';
+        splitterControls.style.display = 'none';
+        lcdSplitterRow.style.display = 'none';
+      }
+      recompute();
+    });
+  });
+
+  phaseModeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      phaseModeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      phaseMode = btn.dataset.phase;
+      if (phaseMode === 'coherent'){
+        phaseModeHint.textContent = 'Panjang kabel & fase tiap antena disamakan — sinyal saling menguatkan terarah (dapat gain array penuh).';
+      } else {
+        phaseModeHint.textContent = 'Fase antar-antena acak/tidak dikontrol — tidak ada penguatan terarah tambahan dari susunan array.';
+      }
+      recompute();
+    });
+  });
 
   freqBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -621,6 +958,7 @@
   txPowerRange.addEventListener('input', () => {
     txPowerDbm = parseFloat(txPowerRange.value);
     syncTxDisplay();
+    txPowerRange.setAttribute('aria-valuetext', `${txPowerDbm.toFixed(1)} dBm`);
     recompute();
   });
 
@@ -652,41 +990,77 @@
   function recompute(){
     const gainDbi = parseFloat(gainNum.value || 0);
     const lossDb = parseFloat(lossNum.value || 0);
-    const eirp = txPowerDbm + gainDbi - lossDb;
+    const antCount = clamp(Math.round(parseFloat(antCountNum.value || 1)), 1, 12);
+    antCountNum.value = antCount;
+    antCountRange.value = antCount;
+
+    const idealSplitLossDb = 10 * Math.log10(antCount);
+    const splitterExtraDb = parseFloat(splitterExtraNum.value || 0);
+    const totalSplitLossDb = idealSplitLossDb + splitterExtraDb;
+
+    // Daya yang benar-benar sampai di tiap antena
+    let perAntPowerDbm;
+    if (sourceMode === 'splitter'){
+      perAntPowerDbm = txPowerDbm - totalSplitLossDb;
+    } else {
+      perAntPowerDbm = txPowerDbm; // tiap antena punya modul sendiri, daya penuh
+    }
+
+    const eirpSingle = perAntPowerDbm + gainDbi - lossDb;
+    // Gain array hanya didapat penuh jika antena sefase (phased array).
+    // Jika tidak sefase, tidak ada penguatan terarah tambahan dari susunan array.
+    const arrayGainDb = phaseMode === 'coherent' ? idealSplitLossDb : 0;
+    const eirp = eirpSingle + arrayGainDb;
     const isolated = dummyLoad.checked;
 
+    const arrayNote = phaseMode === 'coherent' ? '(sefase)' : '(tidak sefase)';
+    arrayGainBadge.textContent = `+${arrayGainDb.toFixed(1)} dB ARRAY ${arrayNote}`;
+
+    lcdSplitterLoss.textContent = `${totalSplitLossDb.toFixed(1)} dB (ideal ${idealSplitLossDb.toFixed(1)} + ${splitterExtraDb.toFixed(1)})`;
+    lcdPerAntPower.textContent = formatPower(dbmToMw(perAntPowerDbm)) + ` (${perAntPowerDbm.toFixed(1)} dBm)`;
+
     eirpDbmEl.textContent = eirp.toFixed(1);
-    lcdEirpMw.textContent = formatPower(dbmToMw(eirp));
+    lcdEirpSingle.textContent = formatPower(dbmToMw(eirpSingle)) + ` (${eirpSingle.toFixed(1)} dBm)`;
+    lcdEirpMw.textContent = formatPower(dbmToMw(eirp)) + ` (${eirp.toFixed(1)} dBm)`;
+    lcdAntCount.textContent = `${antCount} unit @ ${gainDbi.toFixed(1)} dBi`;
     lcdPower.textContent = formatPower(dbmToMw(txPowerDbm));
 
-    let statusText, statusClass, verdict;
+    let statusText, statusClass, statusIcon, verdict;
     if (isolated){
       statusText = 'AMAN (TERISOLASI)';
       statusClass = '';
+      statusIcon = '🔒';
       verdict = 'Sinyal diarahkan ke dummy load / shielded enclosure — emisi efektif ke lingkungan luar mendekati nol, terlepas dari nilai EIRP internal di atas. Validasi tetap dianjurkan dengan SDR portable di luar enclosure.';
     } else if (eirp <= 20){
       statusText = 'AMAN';
       statusClass = '';
+      statusIcon = '✓';
       verdict = 'EIRP berada dalam kisaran umum batas unlicensed ISM band. Tetap perhatikan jangkauan aktual dan hindari mengarah ke perangkat lain dalam waktu lama.';
     } else if (eirp <= 30){
       statusText = 'PERLU IZIN';
       statusClass = 'warn';
+      statusIcon = '⚠';
       verdict = 'EIRP melewati kisaran umum unlicensed. Pada level ini berpotensi memerlukan sertifikasi atau izin khusus tergantung sub-band dan regulasi setempat (SDPPI/Kominfo).';
     } else {
       statusText = 'BAHAYA';
       statusClass = 'danger';
+      statusIcon = '✕';
       verdict = 'EIRP setinggi ini berpotensi masuk kategori alat pengacau sinyal (jammer) dan dapat mengganggu WiFi, Bluetooth, atau perangkat lain di sekitarnya. Gunakan dummy load / shielded enclosure, atau turunkan daya dan gain.';
     }
-    lcdStatus.textContent = statusText;
+    lcdStatus.textContent = `${statusIcon} ${statusText}`;
     lcdStatus.className = 'status-tag ' + statusClass;
     verdictText.textContent = verdict;
 
+    const isOffScale = eirp < -10 || eirp > 50;
     const t = clamp((eirp + 10) / 60, 0, 1);
     const rotation = 180 * t - 90;
     needleGroup.style.transform = `rotate(${rotation}deg)`;
+    eirpDbmEl.parentElement.classList.toggle('off-scale', isOffScale);
+    gaugeWrap.classList.toggle('isolated', isolated);
 
     lastEirp = eirp;
     updateRangeEstimate();
+    updateRadiationPattern();
   }
 
   function updateRangeEstimate(){
@@ -716,6 +1090,148 @@
     }
     rangeVerdict.textContent = verdict;
   }
+
+  // ---- Pola Radiasi & Tingkat Kepipihan ----
+  function patternR(thetaDeg, bwDeg){
+    if (bwDeg >= 359.9) return 1; // omni azimuth: lingkaran penuh
+    let theta = Math.abs(((thetaDeg + 180) % 360 + 360) % 360 - 180); // normalisasi 0..180
+    if (theta > 90) return 0.03; // lobe belakang (disederhanakan, hampir nol)
+    const halfBW = clamp(bwDeg / 2, 1, 89.9);
+    const halfBWrad = halfBW * Math.PI / 180;
+    const n = Math.log(0.5) / Math.log(Math.cos(halfBWrad));
+    const thetaRad = theta * Math.PI / 180;
+    let r = Math.pow(Math.cos(thetaRad), n);
+    if (!isFinite(r) || isNaN(r)) r = 0;
+    return Math.max(r, 0.03);
+  }
+
+  function buildAzimuthPath(bwDeg, maxR, cx, cy){
+    let d = '';
+    for (let i = 0; i <= 360; i += 4){
+      const r = patternR(i, bwDeg) * maxR;
+      const rad = i * Math.PI / 180;
+      const x = cx + r * Math.sin(rad);
+      const y = cy - r * Math.cos(rad);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    return d + 'Z';
+  }
+
+  function buildElevationPath(bwDeg, maxR, cx, cy){
+    let d = '';
+    for (let i = 0; i <= 360; i += 4){
+      const r = patternR(i, bwDeg) * maxR;
+      const rad = i * Math.PI / 180;
+      const x = cx + r * Math.cos(rad);
+      const y = cy - r * Math.sin(rad);
+      d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    return d + 'Z';
+  }
+
+  function updateRadiationPattern(){
+    const gainDbi = parseFloat(gainNum.value || 0);
+    const dLin = Math.pow(10, gainDbi / 10);
+
+    let H, V;
+    if (antennaType === 'omni'){
+      H = 360;
+      V = clamp(41253 / (dLin * H), 2, 180);
+    } else if (antennaType === 'sector'){
+      H = sectorH;
+      V = clamp(41253 / (dLin * H), 2, 180);
+    } else { // directional: pencil beam simetris
+      const theta = Math.sqrt(41253 / dLin);
+      H = clamp(theta, 2, 180);
+      V = H;
+    }
+
+    const flatIndex = H / V;
+    let flatLabel;
+    if (flatIndex < 1.5) flatLabel = 'Simetris / Mirip Pensil';
+    else if (flatIndex < 5) flatLabel = 'Agak Pipih (Oval)';
+    else if (flatIndex < 20) flatLabel = 'Pipih (Cakram)';
+    else flatLabel = 'Sangat Pipih (Pancake)';
+
+    mHoriz.textContent = H.toFixed(1) + '°';
+    mVert.textContent = V.toFixed(1) + '°';
+    mFlat.textContent = flatIndex.toFixed(1) + '×';
+    mFlatLabel.textContent = flatLabel;
+
+    // ukuran lobe divisualisasikan mengikuti EIRP relatif saat ini (kosmetik, bukan skala jarak)
+    const visScale = clamp((lastEirp - (-10)) / (40 - (-10)), 0.15, 1);
+    const maxR = 35 + visScale * 65;
+
+    azPath.setAttribute('d', buildAzimuthPath(H, maxR, 120, 120));
+    elPath.setAttribute('d', buildElevationPath(V, maxR, 120, 120));
+  }
+
+  patternTypeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      patternTypeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      antennaType = btn.dataset.pattern;
+      sectorPresetRow.style.display = antennaType === 'sector' ? '' : 'none';
+      if (antennaType === 'omni'){
+        patternHint.textContent = 'Antena omni memancar 360° mendatar; makin tinggi gain (dBi), makin sempit sudut vertikalnya — pola makin "pipih" seperti piringan tipis.';
+      } else if (antennaType === 'sector'){
+        patternHint.textContent = 'Antena sektoral memancar pada sudut horizontal tertentu; makin tinggi gain, makin sempit sudut vertikalnya.';
+      } else {
+        patternHint.textContent = 'Antena direksional (Yagi/panel/grid) memusatkan energi ke satu arah — makin tinggi gain, lobe makin sempit di kedua sisi (mirip pensil), bukan pipih.';
+      }
+      updateRadiationPattern();
+    });
+  });
+
+  sectorPresetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      sectorPresetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sectorH = parseFloat(btn.dataset.sector);
+      updateRadiationPattern();
+    });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    txPowerDbm = DEFAULTS.txPowerDbm;
+    currentUnit = DEFAULTS.unit;
+    freqMHz = DEFAULTS.freqMHz;
+
+    unitBtns.forEach(b => b.classList.toggle('active', b.dataset.unit === DEFAULTS.unit));
+    txUnitLabel.textContent = 'dBm';
+    txPowerRange.value = DEFAULTS.txPowerDbm;
+
+    gainRange.value = DEFAULTS.gain; gainNum.value = DEFAULTS.gain;
+    antCountRange.value = DEFAULTS.antCount; antCountNum.value = DEFAULTS.antCount;
+    splitterExtraRange.value = DEFAULTS.splitterExtra; splitterExtraNum.value = DEFAULTS.splitterExtra;
+    lossRange.value = DEFAULTS.loss; lossNum.value = DEFAULTS.loss;
+    dummyLoad.checked = DEFAULTS.dummyLoad;
+
+    sourceMode = DEFAULTS.sourceMode;
+    sourceModeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === DEFAULTS.sourceMode));
+    txPowerLabel.textContent = 'Daya Pemancar (TX Power)';
+    sourceModeHint.textContent = 'Tiap antena punya pemancar/modul sendiri dengan daya yang sama.';
+    splitterControls.style.display = 'none';
+    lcdSplitterRow.style.display = 'none';
+
+    phaseMode = DEFAULTS.phaseMode;
+    phaseModeBtns.forEach(b => b.classList.toggle('active', b.dataset.phase === DEFAULTS.phaseMode));
+    phaseModeHint.textContent = 'Panjang kabel & fase tiap antena disamakan — sinyal saling menguatkan terarah (dapat gain array penuh).';
+
+    freqBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.freq) === DEFAULTS.freqMHz));
+    distRange.value = DEFAULTS.dist; distNum.value = DEFAULTS.dist;
+    obstRange.value = DEFAULTS.obst; obstNum.value = DEFAULTS.obst;
+
+    antennaType = DEFAULTS.antennaType;
+    sectorH = DEFAULTS.sectorH;
+    patternTypeBtns.forEach(b => b.classList.toggle('active', b.dataset.pattern === DEFAULTS.antennaType));
+    sectorPresetBtns.forEach(b => b.classList.toggle('active', parseFloat(b.dataset.sector) === DEFAULTS.sectorH));
+    sectorPresetRow.style.display = 'none';
+    patternHint.textContent = 'Antena omni memancar 360° mendatar; makin tinggi gain (dBi), makin sempit sudut vertikalnya — pola makin "pipih" seperti piringan tipis.';
+
+    syncTxDisplay();
+    recompute();
+  });
 
   syncTxDisplay();
   recompute();
