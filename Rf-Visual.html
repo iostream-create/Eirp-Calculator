@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RF·CAL — Pattern 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root{
+    --ink:#0a0e13;
+    --panel:#11161d;
+    --panel-2:#161d26;
+    --line:#232d39;
+    --text-hi:#eaf2f7;
+    --text-lo:#7c8a97;
+    --phosphor:#4dffa0;
+    --phosphor-dim:#1d5c40;
+    --amber:#ffb445;
+    --cyan:#57c7ff;
+    --mono:'IBM Plex Mono', monospace;
+    --sans:'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at top, #121822 0%, var(--ink) 60%);
+    color:var(--text-hi);
+    font-family:var(--sans);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:28px 16px 60px;
+  }
+  .device{
+    width:100%;
+    max-width:1100px;
+    background:linear-gradient(180deg, var(--panel) 0%, #0d1218 100%);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+    overflow:hidden;
+  }
+  .nameplate{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 26px;border-bottom:1px solid var(--line);
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 8px);
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-mark{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:0.14em;color:var(--phosphor);text-shadow:0 0 12px rgba(77,255,160,0.45);}
+  .brand-sub{font-family:var(--sans);font-weight:600;font-size:19px;}
+  .unit-badge{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;color:var(--cyan);border:1px solid #1c3a4d;background:#0c1a22;padding:6px 12px;border-radius:999px;white-space:nowrap;}
+  .reset-btn{font-family:var(--mono);font-size:11px;letter-spacing:0.04em;color:var(--text-lo);background:var(--panel-2);border:1px solid var(--line);padding:6px 12px;border-radius:999px;cursor:pointer;margin-left:10px;}
+  .reset-btn:hover{color:var(--text-hi);border-color:#39485a;}
+
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:1px;background:var(--line);}
+  @media (max-width:800px){.layout{grid-template-columns:1fr;}}
+  .controls{background:var(--panel);padding:24px;}
+  .viewport-col{background:var(--panel);padding:24px;display:flex;flex-direction:column;}
+
+  .control-group{margin-bottom:22px;}
+  .control-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .control-head label{font-size:13px;font-weight:600;color:var(--text-hi);}
+  .control-head .val{font-family:var(--mono);font-size:12px;color:var(--phosphor);}
+
+  input[type="range"]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--line);outline:none;margin:6px 0 4px;}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--text-hi);border:3px solid var(--phosphor);cursor:pointer;}
+  input[type="range"]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--text-hi);border:3px solid var(--phosphor);cursor:pointer;}
+
+  .btn-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .opt-btn{flex:1;min-width:70px;font-family:var(--mono);font-size:11.5px;background:var(--panel-2);color:var(--text-lo);border:1px solid var(--line);padding:8px 6px;border-radius:8px;cursor:pointer;text-align:center;transition:all .15s ease;}
+  .opt-btn.active{background:var(--phosphor-dim);color:var(--phosphor);border-color:var(--phosphor-dim);}
+  .opt-btn:hover:not(.active){border-color:#39485a;color:var(--text-hi);}
+
+  .hint{font-size:11.5px;color:var(--text-lo);line-height:1.5;margin-top:8px;}
+
+  .readout-card{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:24px;}
+  .readout-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .readout-row:last-child{border-bottom:none;}
+  .readout-row .k{font-size:11.5px;color:var(--text-lo);}
+  .readout-row .v{font-family:var(--mono);font-size:14px;color:var(--phosphor);font-weight:600;}
+
+  .viewport-wrap{position:relative;flex:1;min-height:420px;background:radial-gradient(ellipse at center, #0d1420 0%, #060a10 100%);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:grab;}
+  .viewport-wrap.dragging{cursor:grabbing;}
+  #canvas-host{width:100%;height:100%;display:block;}
+
+  .legend{position:absolute;top:16px;left:16px;font-family:var(--mono);font-size:10.5px;color:var(--text-lo);background:rgba(10,14,19,0.55);padding:10px 12px;border-radius:8px;border:1px solid var(--line);}
+  .legend-title{color:var(--text-hi);font-size:10.5px;margin-bottom:6px;letter-spacing:0.03em;}
+  .legend-bar{width:14px;height:130px;border-radius:3px;margin:0 auto 6px;background:linear-gradient(180deg,#ff2b1f 0%, #ffae00 20%, #fff400 38%, #35ff3d 55%, #17e0c8 70%, #2288ff 85%, #1626ff 100%);}
+  .legend-ticks{display:flex;flex-direction:column;justify-content:space-between;height:130px;position:absolute;top:26px;left:38px;}
+  .legend-wrap{position:relative;}
+
+  .viewport-hint{position:absolute;bottom:12px;right:16px;font-family:var(--mono);font-size:10.5px;color:var(--text-lo);}
+  .axis-label{position:absolute;font-family:var(--mono);font-size:12px;color:var(--text-lo);pointer-events:none;}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="nameplate">
+    <div class="brand">
+      <div class="brand-mark">RF·CAL</div>
+      <div class="brand-sub">Pattern 3D — Simulator Radiasi Antena</div>
+    </div>
+    <div style="display:flex;align-items:center;">
+      <div class="unit-badge" id="eirpBadge">EIRP 30.0 dBm</div>
+      <button class="reset-btn" id="resetBtn">RESET</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="controls">
+
+      <div class="control-group">
+        <div class="control-head"><label>Daya Modul (TX)</label><span class="val" id="pwrVal">20.0 dBm</span></div>
+        <input type="range" id="pwrRange" min="-10" max="40" step="0.5" value="20">
+      </div>
+
+      <div class="control-group">
+        <div class="control-head"><label>Gain Antena</label><span class="val" id="gainVal">10.0 dBi</span></div>
+        <input type="range" id="gainRange" min="0" max="25" step="0.5" value="10">
+      </div>
+
+      <div class="control-group">
+        <div class="control-head"><label>Jenis Antena</label></div>
+        <div class="btn-row">
+          <button class="opt-btn active" data-type="omni">Omni</button>
+          <button class="opt-btn" data-type="sector">Sektoral</button>
+          <button class="opt-btn" data-type="yagi">Yagi</button>
+        </div>
+        <div class="hint" id="typeHint">Memancar 360° mendatar — pola berbentuk donat (torus), makin tinggi gain makin pipih.</div>
+      </div>
+
+      <div class="control-group" id="sectorGroup" style="display:none;">
+        <div class="control-head"><label>Lebar Sektor (H)</label></div>
+        <div class="btn-row">
+          <button class="opt-btn" data-sector="60">60°</button>
+          <button class="opt-btn active" data-sector="90">90°</button>
+          <button class="opt-btn" data-sector="120">120°</button>
+          <button class="opt-btn" data-sector="180">180°</button>
+        </div>
+      </div>
+
+      <div class="readout-card">
+        <div class="readout-row"><span class="k">EIRP Puncak</span><span class="v" id="rEirp">30.0 dBm</span></div>
+        <div class="readout-row"><span class="k">HPBW Horizontal</span><span class="v" id="rHBW">360.0°</span></div>
+        <div class="readout-row"><span class="k">HPBW Vertikal</span><span class="v" id="rVBW">—</span></div>
+      </div>
+    </div>
+
+    <div class="viewport-col">
+      <div class="viewport-wrap" id="viewportWrap">
+        <div id="canvas-host"></div>
+        <div class="legend-wrap">
+          <div class="legend">
+            <div class="legend-title">Gain_Tot[dB]</div>
+            <div class="legend-bar"></div>
+          </div>
+          <div class="legend-ticks" style="color:#7c8a97;font-family:'IBM Plex Mono',monospace;font-size:10px;">
+            <span>0.0</span><span>-5.0</span><span>-10.0</span><span>-15.0</span><span>-20.0</span>
+          </div>
+        </div>
+        <div class="viewport-hint">seret = putar &nbsp;•&nbsp; gulir = zoom</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DEFAULTS = { pwr:20, gain:10, type:'omni', sector:90 };
+  let txPowerDbm = DEFAULTS.pwr, gainDbi = DEFAULTS.gain, antennaType = DEFAULTS.type, sectorH = DEFAULTS.sector;
+
+  const pwrRange = document.getElementById('pwrRange');
+  const gainRange = document.getElementById('gainRange');
+  const pwrVal = document.getElementById('pwrVal');
+  const gainVal = document.getElementById('gainVal');
+  const typeBtns = document.querySelectorAll('[data-type]');
+  const sectorBtns = document.querySelectorAll('[data-sector]');
+  const sectorGroup = document.getElementById('sectorGroup');
+  const typeHint = document.getElementById('typeHint');
+  const eirpBadge = document.getElementById('eirpBadge');
+  const rEirp = document.getElementById('rEirp');
+  const rHBW = document.getElementById('rHBW');
+  const rVBW = document.getElementById('rVBW');
+  const resetBtn = document.getElementById('resetBtn');
+  const viewportWrap = document.getElementById('viewportWrap');
+
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+  // ---- Three.js setup ----
+  const host = document.getElementById('canvas-host');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  host.appendChild(renderer.domElement);
+
+  const rig = new THREE.Group();
+  scene.add(rig);
+
+  // axes
+  function makeAxisLine(dir, color){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.35 });
+    const geo = new THREE.BufferGeometry().setFromPoints([dir.clone().multiplyScalar(-1.6), dir.clone().multiplyScalar(1.6)]);
+    return new THREE.Line(geo, mat);
+  }
+  rig.add(makeAxisLine(new THREE.Vector3(1,0,0), 0x57c7ff));
+  rig.add(makeAxisLine(new THREE.Vector3(0,1,0), 0x4dffa0));
+  rig.add(makeAxisLine(new THREE.Vector3(0,0,1), 0x7c8a97));
+
+  let surfaceMesh = null, wireMesh = null;
+
+  function jetColor(t){
+    t = clamp(t,0,1);
+    const r = clamp(1.5 - Math.abs(4*t-3),0,1);
+    const g = clamp(1.5 - Math.abs(4*t-2),0,1);
+    const b = clamp(1.5 - Math.abs(4*t-1),0,1);
+    return [r,g,b];
+  }
+
+  function gainLinear(theta, phi){
+    // theta: polar angle from +Z (0..PI), phi: azimuth in XY plane (0..2PI)
+    const dLin = Math.pow(10, gainDbi/10);
+    const FLOOR = 0.025;
+
+    if (antennaType === 'omni'){
+      const V = clamp(41253/(dLin*360), 2, 180);
+      const halfV = V/2;
+      const thEq = (90-halfV)*Math.PI/180;
+      let n = Math.log(0.5)/Math.log(Math.sin(thEq));
+      if (!isFinite(n)) n = 1;
+      let r = Math.pow(Math.sin(theta), n);
+      return Math.max(r, FLOOR);
+    }
+    if (antennaType === 'sector'){
+      const H = sectorH;
+      const V = clamp(41253/(dLin*H), 2, 180);
+      let dPhiDeg = (phi*180/Math.PI);
+      dPhiDeg = ((dPhiDeg+180)%360+360)%360-180; // wrap -180..180, boresight at phi=0
+      const halfH = clamp(H/2, 1, 89.9);
+      let m = Math.log(0.5)/Math.log(Math.cos(halfH*Math.PI/180));
+      if (!isFinite(m)) m = 1;
+      let az = Math.abs(dPhiDeg) < 90 ? Math.pow(Math.cos(dPhiDeg*Math.PI/180), m) : FLOOR;
+      az = Math.max(az, FLOOR);
+
+      const halfV = V/2;
+      const thEq = (90-halfV)*Math.PI/180;
+      let n = Math.log(0.5)/Math.log(Math.sin(thEq));
+      if (!isFinite(n)) n = 1;
+      let el = Math.max(Math.pow(Math.sin(theta), n), FLOOR);
+
+      return Math.max(az*el, FLOOR);
+    }
+    // yagi: pencil beam pointing along +X axis (boresight at theta=90,phi=0)
+    const beam = clamp(Math.sqrt(41253/dLin), 2, 150);
+    const half = clamp(beam/2, 1, 89.9);
+    let m = Math.log(0.5)/Math.log(Math.cos(half*Math.PI/180));
+    if (!isFinite(m)) m = 1;
+    const px = Math.sin(theta)*Math.cos(phi), py = Math.sin(theta)*Math.sin(phi), pz = Math.cos(theta);
+    const dot = clamp(px, -1, 1); // boresight = (1,0,0)
+    const gamma = Math.acos(dot);
+    let r = gamma < Math.PI/2 ? Math.pow(Math.cos(gamma), m) : FLOOR;
+    return Math.max(r, FLOOR);
+  }
+
+  function buildSurface(){
+    if (surfaceMesh){ rig.remove(surfaceMesh); surfaceMesh.geometry.dispose(); surfaceMesh.material.dispose(); }
+    if (wireMesh){ rig.remove(wireMesh); wireMesh.geometry.dispose(); wireMesh.material.dispose(); }
+
+    const nTheta = 48, nPhi = 72;
+    const positions = [], colors = [], indices = [];
+    const R = 1.35;
+
+    for (let i=0;i<=nTheta;i++){
+      const theta = Math.PI * i/nTheta;
+      for (let j=0;j<=nPhi;j++){
+        const phi = 2*Math.PI * j/nPhi;
+        const g = gainLinear(theta, phi);
+        const r = R * g;
+        const x = r*Math.sin(theta)*Math.cos(phi);
+        const y = r*Math.sin(theta)*Math.sin(phi);
+        const z = r*Math.cos(theta);
+        positions.push(x,z,y); // swap so Z (elevation) reads as up on screen
+        const dB = 10*Math.log10(g);
+        const t = clamp((dB+20)/20, 0, 1);
+        const [cr,cg,cb] = jetColor(t);
+        colors.push(cr,cg,cb);
+      }
+    }
+    for (let i=0;i<nTheta;i++){
+      for (let j=0;j<nPhi;j++){
+        const a = i*(nPhi+1)+j, b = a+nPhi+1, c = a+1, d = b+1;
+        indices.push(a,b,c, b,d,c);
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshPhongMaterial({ vertexColors:true, shininess:10, side:THREE.DoubleSide });
+    surfaceMesh = new THREE.Mesh(geo, mat);
+    rig.add(surfaceMesh);
+
+    const wireGeo = new THREE.WireframeGeometry(geo);
+    const wireMat = new THREE.LineBasicMaterial({ color:0x000000, transparent:true, opacity:0.12 });
+    wireMesh = new THREE.LineSegments(wireGeo, wireMat);
+    rig.add(wireMesh);
+  }
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.65);
+  scene.add(ambient);
+  const dLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  dLight.position.set(3,4,2);
+  scene.add(dLight);
+
+  camera.position.set(2.6, 1.9, 2.6);
+  camera.lookAt(0,0,0);
+
+  function resize(){
+    const w = viewportWrap.clientWidth, h = viewportWrap.clientHeight;
+    renderer.setSize(w,h);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  // drag to rotate, wheel to zoom
+  let dragging=false, lastX=0,lastY=0, rotY=0.6, rotX=0.35, dist=4.4;
+  function applyCam(){
+    camera.position.x = dist*Math.cos(rotX)*Math.sin(rotY);
+    camera.position.y = dist*Math.sin(rotX);
+    camera.position.z = dist*Math.cos(rotX)*Math.cos(rotY);
+    camera.lookAt(0,0,0);
+  }
+  viewportWrap.addEventListener('mousedown', e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;viewportWrap.classList.add('dragging');});
+  window.addEventListener('mouseup', ()=>{dragging=false;viewportWrap.classList.remove('dragging');});
+  window.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    rotY += (e.clientX-lastX)*0.008;
+    rotX = clamp(rotX + (e.clientY-lastY)*0.008, -1.3, 1.3);
+    lastX=e.clientX; lastY=e.clientY;
+    applyCam();
+  });
+  viewportWrap.addEventListener('wheel', e=>{
+    e.preventDefault();
+    dist = clamp(dist + e.deltaY*0.0025, 2, 10);
+    applyCam();
+  }, {passive:false});
+  // touch support
+  let touchLast=null;
+  viewportWrap.addEventListener('touchstart', e=>{ if(e.touches.length===1) touchLast={x:e.touches[0].clientX,y:e.touches[0].clientY}; }, {passive:true});
+  viewportWrap.addEventListener('touchmove', e=>{
+    if(e.touches.length===1 && touchLast){
+      const t=e.touches[0];
+      rotY += (t.clientX-touchLast.x)*0.008;
+      rotX = clamp(rotX + (t.clientY-touchLast.y)*0.008, -1.3, 1.3);
+      touchLast = {x:t.clientX,y:t.clientY};
+      applyCam();
+    }
+  }, {passive:true});
+
+  function animate(){
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+
+  function recompute(){
+    const dLin = Math.pow(10, gainDbi/10);
+    const eirp = txPowerDbm + gainDbi;
+    eirpBadge.textContent = `EIRP ${eirp.toFixed(1)} dBm`;
+    rEirp.textContent = `${eirp.toFixed(1)} dBm`;
+
+    let H, V;
+    if (antennaType==='omni'){ H=360; V=clamp(41253/(dLin*360),2,180); rHBW.textContent='360.0°'; rVBW.textContent=V.toFixed(1)+'°'; }
+    else if (antennaType==='sector'){ H=sectorH; V=clamp(41253/(dLin*H),2,180); rHBW.textContent=H.toFixed(1)+'°'; rVBW.textContent=V.toFixed(1)+'°'; }
+    else { H=clamp(Math.sqrt(41253/dLin),2,150); V=H; rHBW.textContent=H.toFixed(1)+'°'; rVBW.textContent=V.toFixed(1)+'°'; }
+
+    buildSurface();
+  }
+
+  pwrRange.addEventListener('input', ()=>{ txPowerDbm=parseFloat(pwrRange.value); pwrVal.textContent=txPowerDbm.toFixed(1)+' dBm'; recompute(); });
+  gainRange.addEventListener('input', ()=>{ gainDbi=parseFloat(gainRange.value); gainVal.textContent=gainDbi.toFixed(1)+' dBi'; recompute(); });
+
+  typeBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      typeBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      antennaType = btn.dataset.type;
+      sectorGroup.style.display = antennaType==='sector' ? '' : 'none';
+      if (antennaType==='omni') typeHint.textContent='Memancar 360° mendatar — pola berbentuk donat (torus), makin tinggi gain makin pipih.';
+      else if (antennaType==='sector') typeHint.textContent='Memancar pada sudut horizontal tertentu — makin tinggi gain, lobe makin sempit di kedua arah.';
+      else typeHint.textContent='Antena direksional (Yagi/panel) — energi terpusat ke satu arah membentuk lobe pensil yang sempit.';
+      recompute();
+    });
+  });
+
+  sectorBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      sectorBtns.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      sectorH = parseFloat(btn.dataset.sector);
+      recompute();
+    });
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    txPowerDbm=DEFAULTS.pwr; gainDbi=DEFAULTS.gain; antennaType=DEFAULTS.type; sectorH=DEFAULTS.sector;
+    pwrRange.value=txPowerDbm; gainRange.value=gainDbi;
+    pwrVal.textContent=txPowerDbm.toFixed(1)+' dBm'; gainVal.textContent=gainDbi.toFixed(1)+' dBi';
+    typeBtns.forEach(b=>b.classList.toggle('active', b.dataset.type===DEFAULTS.type));
+    sectorBtns.forEach(b=>b.classList.toggle('active', parseFloat(b.dataset.sector)===DEFAULTS.sector));
+    sectorGroup.style.display='none';
+    typeHint.textContent='Memancar 360° mendatar — pola berbentuk donat (torus), makin tinggi gain makin pipih.';
+    rotX=0.35; rotY=0.6; dist=4.4; applyCam();
+    recompute();
+  });
+
+  resize();
+  applyCam();
+  recompute();
+  animate();
+})();
+</script>
+</body>
+</html>
