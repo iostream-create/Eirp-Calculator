@@ -475,8 +475,14 @@
     align-items:center;
   }
   .rf-visual {
-    font-size: 11px;
-    text-align: center;
+    font-size: 14px;
+    text-align: left;
+    border: 1px solid white;
+    border-radius: 20px;
+    transition: 0.2s;
+  }
+  rf-visual:hover {
+    transform: scale(1.05);
   }
   .rf-visual a{
     color: var(--text-lo);
@@ -667,7 +673,7 @@
     <div class="range-section-head">
       <div>
         <h3>Pola Radiasi &amp; Tingkat Kepipihan Antena</h3>
-        <div class="rf-visual"><link a href="Rf-Visual.html">Pergi ke 3D visual</a></div>
+        <div class="rf-visual"><a href="Rf-Visual.html">Pergi ke 3D visual</a></div>
         <p>Estimasi bentuk pola pancaran (beamwidth) &amp; indeks kepipihan dari Gain (dBi) &amp; EIRP (dBm) di atas — pendekatan edukatif, bukan data pabrikan.</p>
       </div>
     </div>
